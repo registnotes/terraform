@@ -108,7 +108,8 @@ sed -i "s/^APP_FALLBACK_LOCALE=.*/APP_FALLBACK_LOCALE=ja/" .env
 sed -i "s/^APP_FAKER_LOCALE=.*/APP_FAKER_LOCALE=ja_JP/" .env
 sed -i "s/^APP_ENV=.*/APP_ENV=production/" .env
 sed -i "s/^CACHE_STORE=.*/CACHE_STORE=file/" .env
-sed -i "/^SESSION_DOMAIN=null/a SESSION_SECURE_COOKIE=true" .env
+sed -i "/^SESSION_DOMAIN=null/a SESSION_SECURE_COOKIE=true" .env #新規行を追加して
+sed -i "s/^APP_DEBUG=.*/APP_DEBUG=false/" .env
 
 #マイグレーション
 sudo php artisan key:generate --force
