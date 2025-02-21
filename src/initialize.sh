@@ -6,7 +6,7 @@
 # 変数の定義
 APP_NAME="laravel-app"
 ENVIRONMENT="dev"
-REGION="ap-northeast-1" # 東京リージョン
+REGION="ap-northeast-1"
 DOMAIN="cloud-app-lab.com"
 
 #パッケージインストール
@@ -112,9 +112,29 @@ sed -i "/^SESSION_DOMAIN=null/a SESSION_SECURE_COOKIE=true" .env #新規行を�
 sed -i "s/^APP_DEBUG=.*/APP_DEBUG=false/" .env
 
 #マイグレーション
-sudo php artisan key:generate --force
-sudo php artisan migrate --force
-sudo php artisan migrate:refresh --seed --force
+#sudo php artisan key:generate --force
+#sudo php artisan migrate --force
+#sudo php artisan migrate:refresh --seed --force
+sudo php artisan key:generate --no-interaction
+# MySQL 認証情報を含む mysql.cnf を作成
+cat <<EOF > mysql.cnf
+[client]
+host = ${MYSQL_HOST}
+user = ${MYSQL_USERNAME}
+password = ${MYSQL_PASSWORD}
+database = ${MYSQL_DATABASE}
+EOF
+# ユーザーテーブルの存在を確認
+TABLE_EXISTS=$(mysql --defaults-extra-file=mysql.cnf -N -e "SHOW TABLES LIKE 'users';")
+# テーブルが存在しない場合はマイグレーションとシードを実行
+if [ -z "$TABLE_EXISTS" ]; then
+    echo "usersテーブルが存在しません。マイグレーションを実行します..."
+    cd /var/www/laravel-app
+    sudo php artisan migrate --force
+    sudo php artisan migrate:refresh --seed --force
+    echo "Database seed completed."
+fi
+rm -f "$MYSQL_CNF"
 sudo dnf remove nodejs -y
 sudo curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
 sudo dnf install -y nodejs
