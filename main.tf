@@ -50,6 +50,10 @@ variable "domain" {
   type = string
 }
 
+variable "s3_bucket_name" {
+  type = string
+}
+
 variable "github_pat_token" {
   type      = string
   sensitive = true
