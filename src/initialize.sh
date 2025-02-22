@@ -148,12 +148,14 @@ if [ -z "$TABLE_EXISTS" ]; then
     echo "Database seed completed."
 else
     USER_COUNT=$(mysql --defaults-extra-file=mysql.cnf -N -e "SELECT COUNT(*) FROM users;")
-    echo "USER_COUNT: $USER_COUNT"
-    echo "usersテーブルのデータ数が0です。マイグレーションを実行します..."
-    cd /var/www/laravel-app
-    sudo php artisan migrate --force
-    sudo php artisan migrate:refresh --seed --force
-    echo "Database seed completed."
+    if [ "$USER_COUNT" -eq 0 ]; then
+        echo "USER_COUNT: $USER_COUNT"
+        echo "usersテーブルのデータ数が0です。マイグレーションを実行します..."
+        cd /var/www/laravel-app
+        sudo php artisan migrate --force
+        sudo php artisan migrate:refresh --seed --force
+        echo "Database seed completed."
+    fi
 fi
 rm -f "$MYSQL_CNF"
 sudo dnf remove nodejs -y
