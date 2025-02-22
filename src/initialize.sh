@@ -8,6 +8,8 @@ APP_NAME="laravel-app"
 ENVIRONMENT="dev"
 REGION="ap-northeast-1"
 DOMAIN="cloud-app-lab.com"
+S3_BUCKET="s3.cloud-app-lab.com"
+S3_PATH="storage"
 
 #パッケージインストール
 sudo yum install nginx -y
@@ -26,6 +28,8 @@ MYSQL_HOST=$(aws ssm get-parameter --name "/${APP_NAME}/${ENVIRONMENT}/app/MYSQL
 MYSQL_DATABASE=$(aws ssm get-parameter --name "/${APP_NAME}/${ENVIRONMENT}/app/MYSQL_DATABASE" --region ${REGION} --with-decryption --query "Parameter.Value" --output text)
 MYSQL_USERNAME=$(aws ssm get-parameter --name "/${APP_NAME}/${ENVIRONMENT}/app/MYSQL_USERNAME" --region ${REGION} --with-decryption --query "Parameter.Value" --output text)
 MYSQL_PASSWORD=$(aws ssm get-parameter --name "/${APP_NAME}/${ENVIRONMENT}/app/MYSQL_PASSWORD" --region ${REGION} --with-decryption --query "Parameter.Value" --output text)
+S3_ACCESS_KEY_ID=$(aws ssm get-parameter --name "/${APP_NAME}/${ENVIRONMENT}/app/S3_ACCESS_KEY_ID" --region ${REGION} --with-decryption --query "Parameter.Value" --output text)
+S3_SECRET_ACCESS_KEY=$(aws ssm get-parameter --name "/${APP_NAME}/${ENVIRONMENT}/app/S3_SECRET_ACCESS_KEY" --region ${REGION} --with-decryption --query "Parameter.Value" --output text)
 GITHUB_PAT_TOKEN=$(aws ssm get-parameter --name "/laravel-app/dev/app/GITHUB_PAT_TOKEN" --region "ap-northeast-1" --query "Parameter.Value" --with-decryption --output text)
 
 #GitHubクローン
@@ -36,6 +40,9 @@ sudo php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
 sudo php composer-setup.php --filename=composer
 sudo chown -R nginx:nginx /var/www/laravel-app
 sudo chmod -R 755 /var/www/laravel-app
+
+#S3にLaravelシード用ファイルを差分アップロード
+aws s3 sync /var/www/laravel-app/storage/app/public s3://$S3_BUCKET/$S3_PATH --exact-timestamps
 
 #PHP fpm設定
 CONFIG_FILE="/etc/php-fpm.d/www.conf"
@@ -110,6 +117,11 @@ sed -i "s/^APP_ENV=.*/APP_ENV=production/" .env
 sed -i "s/^CACHE_STORE=.*/CACHE_STORE=file/" .env
 sed -i "/^SESSION_DOMAIN=null/a SESSION_SECURE_COOKIE=true" .env #新規行を追加して
 sed -i "s/^APP_DEBUG=.*/APP_DEBUG=false/" .env
+sed -i "s/^AWS_ACCESS_KEY_ID=.*/AWS_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}/" .env
+sed -i "s/^AWS_SECRET_ACCESS_KEY=.*/AWS_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}/" .env
+sed -i "s/^AWS_DEFAULT_REGION=.*/AWS_DEFAULT_REGION=${REGION}/" .env
+sed -i "s/^AWS_BUCKET=.*/AWS_BUCKET=${S3_BUCKET}/" .env
+sed -i "s/^AWS_USE_PATH_STYLE_ENDPOINT=.*/AWS_USE_PATH_STYLE_ENDPOINT=false/" .env
 
 #マイグレーション
 #sudo php artisan key:generate --force
@@ -126,9 +138,18 @@ database = ${MYSQL_DATABASE}
 EOF
 # ユーザーテーブルの存在を確認
 TABLE_EXISTS=$(mysql --defaults-extra-file=mysql.cnf -N -e "SHOW TABLES LIKE 'users';")
+echo "TABLE_EXISTS: $TABLE_EXISTS"
 # テーブルが存在しない場合はマイグレーションとシードを実行
 if [ -z "$TABLE_EXISTS" ]; then
     echo "usersテーブルが存在しません。マイグレーションを実行します..."
+    cd /var/www/laravel-app
+    sudo php artisan migrate --force
+    sudo php artisan migrate:refresh --seed --force
+    echo "Database seed completed."
+else
+    USER_COUNT=$(mysql --defaults-extra-file=mysql.cnf -N -e "SELECT COUNT(*) FROM users;")
+    echo "USER_COUNT: $USER_COUNT"
+    echo "usersテーブルのデータ数が0です。マイグレーションを実行します..."
     cd /var/www/laravel-app
     sudo php artisan migrate --force
     sudo php artisan migrate:refresh --seed --force

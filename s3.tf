@@ -1,3 +1,12 @@
+
+resource "random_string" "s3_unique_key" {
+  length  = 6
+  upper   = false
+  lower   = true
+  numeric = true
+  special = false
+}
+
 # ------------------------------
 # S3 static backet
 # ------------------------------

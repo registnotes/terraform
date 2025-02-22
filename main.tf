@@ -54,6 +54,16 @@ variable "s3_bucket_name" {
   type = string
 }
 
+variable "s3_access_key_id" {
+  type      = string
+  sensitive = true
+}
+
+variable "s3_secret_access_key" {
+  type      = string
+  sensitive = true
+}
+
 variable "github_pat_token" {
   type      = string
   sensitive = true

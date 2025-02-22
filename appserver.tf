@@ -45,6 +45,18 @@ resource "aws_ssm_parameter" "password" {
   value = random_string.db_password.result
 }
 
+resource "aws_ssm_parameter" "s3_access_key_id" {
+  name  = "/${var.project}/${var.environment}/app/S3_ACCESS_KEY_ID"
+  type  = "SecureString"
+  value = var.s3_access_key_id
+}
+
+resource "aws_ssm_parameter" "s3_secret_access_key" {
+  name  = "/${var.project}/${var.environment}/app/S3_SECRET_ACCESS_KEY"
+  type  = "SecureString"
+  value = var.s3_secret_access_key
+}
+
 resource "aws_ssm_parameter" "github_pat_token" {
   name  = "/${var.project}/${var.environment}/app/GITHUB_PAT_TOKEN"
   type  = "SecureString"
