@@ -1,4 +1,3 @@
-
 resource "random_string" "s3_unique_key" {
   length  = 6
   upper   = false

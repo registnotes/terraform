@@ -173,7 +173,7 @@ resource "aws_autoscaling_group" "app_asg" {
         version            = "$Latest"
       }
       override {
-        instance_type = "t3.small"
+        instance_type = "t2.micro"
       }
     }
   }
