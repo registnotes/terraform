@@ -23,6 +23,12 @@ LOGFILE="/var/log/initialize.log"
 exec > "${LOGFILE}"
 exec 2>&1
 
+#スワップ領域を確保
+sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
 #SSMパラメータ取得
 MYSQL_HOST=$(aws ssm get-parameter --name "/${APP_NAME}/${ENVIRONMENT}/app/MYSQL_HOST" --region ${REGION} --query "Parameter.Value" --output text)
 MYSQL_DATABASE=$(aws ssm get-parameter --name "/${APP_NAME}/${ENVIRONMENT}/app/MYSQL_DATABASE" --region ${REGION} --with-decryption --query "Parameter.Value" --output text)
